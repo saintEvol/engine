@@ -53,7 +53,7 @@ const EventType = WebViewImpl.EventType;
  */
 
 //
-function emptyCallback () { }
+function emptyCallback() { }
 
 /**
  * !#en cc.WebView is a component for display web pages in the game
@@ -111,17 +111,17 @@ let WebView = cc.Class({
         Impl: WebViewImpl
     },
 
-    ctor () {
+    ctor() {
         this._impl = new WebView.Impl();
     },
 
-    onRestore () {
+    onRestore() {
         if (!this._impl) {
             this._impl = new WebView.Impl();
         }
     },
 
-    onEnable () {
+    onEnable() {
         let impl = this._impl;
         impl.createDomElementIfNeeded(this.node.width, this.node.height);
         if (!CC_EDITOR) {
@@ -133,7 +133,7 @@ let WebView = cc.Class({
         impl.setVisible(true);
     },
 
-    onDisable () {
+    onDisable() {
         let impl = this._impl;
         impl.setVisible(false);
         if (!CC_EDITOR) {
@@ -143,33 +143,47 @@ let WebView = cc.Class({
         }
     },
 
-    onDestroy () {
+    onDestroy() {
         if (this._impl) {
             this._impl.destroy();
             this._impl = null;
         }
     },
 
-    update (dt) {
+    update(dt) {
         if (this._impl) {
             this._impl.updateMatrix(this.node);
         }
     },
 
-    _onWebViewLoaded () {
+    _onWebViewLoaded() {
         cc.Component.EventHandler.emitEvents(this.webviewEvents, this, EventType.LOADED);
         this.node.emit('loaded', this);
     },
 
-    _onWebViewLoading () {
+    _onWebViewLoading() {
         cc.Component.EventHandler.emitEvents(this.webviewEvents, this, EventType.LOADING);
         this.node.emit('loading', this);
         return true;
     },
 
-    _onWebViewLoadError () {
+    _onWebViewLoadError() {
         cc.Component.EventHandler.emitEvents(this.webviewEvents, this, EventType.ERROR);
         this.node.emit('error', this);
+    },
+
+    getUserAgent() {
+        if (this._impl) {
+            return this._impl.getUserAgent();
+        }
+
+        return null;
+    },
+
+    setUserAgent(agentStr) {
+        if (this._impl) {
+            this._impl.setUserAgent(agentStr);
+        }
     },
 
     /**
@@ -184,7 +198,7 @@ let WebView = cc.Class({
      * @method setJavascriptInterfaceScheme
      * @param {String} scheme
      */
-    setJavascriptInterfaceScheme (scheme) {
+    setJavascriptInterfaceScheme(scheme) {
         if (this._impl) {
             this._impl.setJavascriptInterfaceScheme(scheme);
         }
@@ -203,7 +217,7 @@ let WebView = cc.Class({
      * @method setOnJSCallback
      * @param {Function} callback
      */
-    setOnJSCallback (callback) {
+    setOnJSCallback(callback) {
         if (this._impl) {
             this._impl.setOnJSCallback(callback);
         }
@@ -220,7 +234,7 @@ let WebView = cc.Class({
      * @method evaluateJS
      * @param {String} str
      */
-    evaluateJS (str) {
+    evaluateJS(str) {
         if (this._impl) {
             this._impl.evaluateJS(str);
         }

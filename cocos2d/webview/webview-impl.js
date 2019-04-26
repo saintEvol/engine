@@ -33,7 +33,7 @@ let _mat4_temp = math.mat4.create();
 let WebViewImpl = cc.Class({
     name: "WebViewImpl",
 
-    ctor () {
+    ctor() {
         // this.setContentSize(cc.size(300, 200));
         this._EventList = {};
 
@@ -57,7 +57,7 @@ let WebViewImpl = cc.Class({
         this.__eventListeners = {};
     },
 
-    _updateVisibility () {
+    _updateVisibility() {
         if (!this._div) return;
         let div = this._div;
         if (this._visible) {
@@ -69,7 +69,7 @@ let WebViewImpl = cc.Class({
         this._forceUpdate = true;
     },
 
-    _updateSize (w, h) {
+    _updateSize(w, h) {
         let div = this._div;
         if (div) {
             div.style.width = w + "px";
@@ -77,7 +77,7 @@ let WebViewImpl = cc.Class({
         }
     },
 
-    _initEvent () {
+    _initEvent() {
         let iframe = this._iframe;
         if (iframe) {
             let cbs = this.__eventListeners, self = this;
@@ -92,7 +92,7 @@ let WebViewImpl = cc.Class({
         }
     },
 
-    _initStyle () {
+    _initStyle() {
         if (!this._div) return;
         let div = this._div;
         div.style.position = "absolute";
@@ -100,14 +100,14 @@ let WebViewImpl = cc.Class({
         div.style.left = "0px";
     },
 
-    _setOpacity (opacity) {
+    _setOpacity(opacity) {
         let iframe = this._iframe;
         if (iframe && iframe.style) {
             iframe.style.opacity = opacity / 255;
         }
     },
 
-    _createDom (w, h) {
+    _createDom(w, h) {
         if (WebViewImpl._polyfill.enableDiv) {
             this._div = document.createElement("div");
             this._div.style["-webkit-overflow"] = "auto";
@@ -134,7 +134,7 @@ let WebViewImpl = cc.Class({
         this._updateVisibility();
     },
 
-    _createNativeControl (w, h) {
+    _createNativeControl(w, h) {
         this._createDom(w, h);
         this._initStyle();
         this._initEvent();
@@ -160,7 +160,7 @@ let WebViewImpl = cc.Class({
         }
     },
 
-    removeDom () {
+    removeDom() {
         let div = this._div;
         if (div) {
             let hasChild = utils.contains(cc.game.container, div);
@@ -180,11 +180,11 @@ let WebViewImpl = cc.Class({
         }
     },
 
-    setOnJSCallback (callback) {},
-    setJavascriptInterfaceScheme (scheme) {},
+    setOnJSCallback(callback) { },
+    setJavascriptInterfaceScheme(scheme) { },
     // private method
-    loadData (data, MIMEType, encoding, baseURL) {},
-    loadHTMLString (string, baseURL) {},
+    loadData(data, MIMEType, encoding, baseURL) { },
+    loadHTMLString(string, baseURL) { },
 
     /**
      * Load an URL
@@ -207,17 +207,27 @@ let WebViewImpl = cc.Class({
         }
     },
 
+    getUserAgent() {
+        if(CC_EDITOR) return "get user agent in editor";
+        return "get user agent, on web"
+    },
+
+    setUserAgent(agentStr){
+        if(CC_EDITOR) return "set useragent:" + agentStr + ",in editor";
+        return "set useragent:" + agentStr + ",on web"
+    },
+
     /**
      * Stop loading
      */
-    stopLoading () {
+    stopLoading() {
         cc.logID(7800);
     },
 
     /**
      * Reload the WebView
      */
-    reload () {
+    reload() {
         let iframe = this._iframe;
         if (iframe) {
             let win = iframe.contentWindow;
@@ -229,7 +239,7 @@ let WebViewImpl = cc.Class({
     /**
      * Determine whether to go back
      */
-    canGoBack () {
+    canGoBack() {
         cc.logID(7801);
         return true;
     },
@@ -237,7 +247,7 @@ let WebViewImpl = cc.Class({
     /**
      * Determine whether to go forward
      */
-    canGoForward () {
+    canGoForward() {
         cc.logID(7802);
         return true;
     },
@@ -245,7 +255,7 @@ let WebViewImpl = cc.Class({
     /**
      * go back
      */
-    goBack () {
+    goBack() {
         try {
             if (WebViewImpl._polyfill.closeHistory)
                 return cc.logID(7803);
@@ -263,7 +273,7 @@ let WebViewImpl = cc.Class({
     /**
      * go forward
      */
-    goForward () {
+    goForward() {
         try {
             if (WebViewImpl._polyfill.closeHistory)
                 return cc.logID(7804);
@@ -282,7 +292,7 @@ let WebViewImpl = cc.Class({
      * In the webview execution within a period of js string
      * @param {String} str
      */
-    evaluateJS (str) {
+    evaluateJS(str) {
         let iframe = this._iframe;
         if (iframe) {
             let win = iframe.contentWindow;
@@ -298,7 +308,7 @@ let WebViewImpl = cc.Class({
     /**
      * Limited scale
      */
-    setScalesPageToFit () {
+    setScalesPageToFit() {
         cc.logID(7805);
     },
 
@@ -307,7 +317,7 @@ let WebViewImpl = cc.Class({
      * @param {WebViewImpl.EventType} event
      * @param {Function} callback
      */
-    setEventListener (event, callback) {
+    setEventListener(event, callback) {
         this._EventList[event] = callback;
     },
 
@@ -315,32 +325,32 @@ let WebViewImpl = cc.Class({
      * Delete events
      * @param {WebViewImpl.EventType} event
      */
-    removeEventListener (event) {
+    removeEventListener(event) {
         this._EventList[event] = null;
     },
 
-    _dispatchEvent (event) {
+    _dispatchEvent(event) {
         let callback = this._EventList[event];
         if (callback)
             callback.call(this, this, this._iframe.src);
     },
 
-    _createRenderCmd () {
+    _createRenderCmd() {
         return new WebViewImpl.RenderCmd(this);
     },
 
-    destroy () {
+    destroy() {
         this.removeDom();
     },
 
-    setVisible (visible) {
+    setVisible(visible) {
         if (this._visible !== visible) {
             this._visible = !!visible;
             this._updateVisibility();
         }
     },
 
-    updateMatrix (node) {
+    updateMatrix(node) {
         if (!this._div || !this._visible) return;
 
         node.getWorldMatrix(_mat4_temp);

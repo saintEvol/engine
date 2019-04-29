@@ -213,8 +213,12 @@ let WebViewImpl = cc.Class({
     },
 
     setUserAgent(agentStr){
-        if(CC_EDITOR) return "set useragent:" + agentStr + ",in editor";
+        if(CC_EDITOR) cc.log("set useragent:" + agentStr + ",in editor");
         return "set useragent:" + agentStr + ",on web"
+    },
+
+    appendUserAgent(appendStr){
+        if(CC_EDITOR) cc.log("append useragent:" + agentStr + ",in editor");
     },
 
     /**

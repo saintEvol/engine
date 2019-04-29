@@ -186,6 +186,12 @@ let WebView = cc.Class({
         }
     },
 
+    appendUserAgent(agentStr) {
+        if(this._impl){
+            this._impl.appendUserAgent(agentStr);
+        }
+    },
+
     /**
      * !#en
      * Set javascript interface scheme (see also setOnJSCallback). <br/>

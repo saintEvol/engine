@@ -26,7 +26,8 @@ module.exports = {
             "toggleContainer": "https://docs.cocos.com/creator/manual/zh/components/toggleContainer.html",
             "slider": "https://docs.cocos.com/creator/manual/zh/components/slider.html",
             "block_input_events": "https://docs.cocos.com/creator/manual/zh/components/block-input-events.html",
-            "wx_subcontext_view": "https://docs.cocos.com/creator/manual/zh/publish/publish-wechatgame-sub-domain.html"
+            "wx_subcontext_view": "https://docs.cocos.com/creator/manual/zh/publish/publish-wechatgame-sub-domain.html",
+            "swan_subcontext_view": "https://docs.cocos.com/creator/manual/zh/publish/publish-baidugame-sub-domain.html"
         },
         'animation': {
             'default_clip': '在勾选自动播放或调用 play() 时默认播放的动画 clip。',
@@ -403,7 +404,10 @@ module.exports = {
             'layer': '指定 TiledTile 属于哪一个 TiledLayer'
         },
         'wx_subcontext_view': {
-            'interval': '子域界面的刷新时间间隔'
+            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置'
+        },
+        'swan_subcontext_view': {
+            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置'
         }
     }
 };

@@ -158,7 +158,7 @@ let VideoPlayerImpl = cc.Class({
         video.style.height = height + 'px';
     },
 
-    _createDom () {
+    _createDom (muted) {
         let video = document.createElement('video');
         video.style.position = "absolute";
         video.style.bottom = "0px";
@@ -169,14 +169,17 @@ let VideoPlayerImpl = cc.Class({
         // This x5-playsinline tag must be added, otherwise the play, pause events will only fire once, in the qq browser.
         video.setAttribute("x5-playsinline", '');
         video.setAttribute('playsinline', '');
+        if (muted) {
+            video.setAttribute('muted', '');
+        }
 
         this._video = video;
         cc.game.container.appendChild(video);
     },
 
-    createDomElementIfNeeded: function () {
+    createDomElementIfNeeded: function (muted) {
         if (!this._video) {
-            this._createDom();
+            this._createDom(muted);
         }
     },
 
@@ -208,7 +211,7 @@ let VideoPlayerImpl = cc.Class({
         this._url = "";
     },
 
-    setURL (path) {
+    setURL (path, muted) {
         let source, extname;
 
         if (this._url === path) {
@@ -217,7 +220,7 @@ let VideoPlayerImpl = cc.Class({
 
         this._url = path;
         this.removeDom();
-        this.createDomElementIfNeeded();
+        this.createDomElementIfNeeded(muted);
         this._bindEvent();
 
         let video = this._video;
@@ -532,9 +535,11 @@ VideoPlayerImpl._polyfill = {
  * But native does not support this encode,
  * so it is best to provide mp4 and webm or ogv file
  */
+// TODO: move into adapter
+const isXiaomiGame = (cc.sys.platform === cc.sys.XIAOMI_GAME);
 const isBaiduGame = (cc.sys.platform === cc.sys.BAIDU_GAME);
 let dom = document.createElement("video");
-if (!CC_WECHATGAME && !isBaiduGame) {
+if (!CC_WECHATGAME && !isBaiduGame && !isXiaomiGame) {
     if (dom.canPlayType("video/ogg")) {
         VideoPlayerImpl._polyfill.canPlayType.push(".ogg");
         VideoPlayerImpl._polyfill.canPlayType.push(".ogv");

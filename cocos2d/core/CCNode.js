@@ -560,7 +560,7 @@ var Node = cc.Class({
             default: undefined,
             type: cc.Float
         },
-        _scale: cc.Vec3,
+        _scale: cc.v3(1, 1, 1),
         _rotationX: 0.0,
         _rotationY: 0.0,
         _quat: cc.Quat,
@@ -1149,11 +1149,6 @@ var Node = cc.Class({
         this._touchListener = null;
         // Mouse event listener
         this._mouseListener = null;
-
-        // default scale
-        this._scale.x = 1;
-        this._scale.y = 1;
-        this._scale.z = 1;
 
         this._matrix = mathPools.mat4.get();
         this._worldMatrix = mathPools.mat4.get();
@@ -1829,7 +1824,10 @@ var Node = cc.Class({
         }
 
         this._updateWorldMatrix();
-        math.mat4.invert(_mat4_temp, this._worldMatrix);
+        // If scale is 0, it can't be hit.
+        if (!math.mat4.invert(_mat4_temp, this._worldMatrix)) {
+            return false;
+        }
         math.vec2.transformMat4(testPt, cameraPt, _mat4_temp);
         testPt.x += this._anchorPoint.x * w;
         testPt.y += this._anchorPoint.y * h;

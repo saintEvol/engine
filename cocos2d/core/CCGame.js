@@ -574,7 +574,7 @@ var game = {
 
 //  @Time ticker section
     _setAnimFrame: function () {
-        this._lastTime = new Date();
+        this._lastTime = performance.now();
         var frameRate = game.config.frameRate;
         this._frameTime = 1000 / frameRate;
 
@@ -610,7 +610,7 @@ var game = {
         }
     },
     _stTime: function(callback){
-        var currTime = new Date().getTime();
+        var currTime = performance.now();
         var timeToCall = Math.max(0, game._frameTime - (currTime - game._lastTime));
         var id = window.setTimeout(function() { callback(); },
             timeToCall);
@@ -731,7 +731,7 @@ var game = {
             this.canvas = localCanvas;
         }
         else if (CC_QQPLAY) {
-            this.container = cc.container = document.createElement("DIV");
+            this.container = document.createElement("DIV");
             this.frame = document.documentElement;
             this.canvas = localCanvas = canvas;
         }

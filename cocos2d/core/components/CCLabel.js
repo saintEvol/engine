@@ -26,12 +26,11 @@
 
 const macro = require('../platform/CCMacro');
 const RenderComponent = require('./CCRenderComponent');
-const renderEngine = require('../renderer/render-engine');
-const RenderFlow = require('../renderer/render-flow');
-const SpriteMaterial = renderEngine.SpriteMaterial;
-const dynamicAtlasManager = require('../renderer/utils/dynamic-atlas/manager');
+const Material = require('../assets/material/CCMaterial');
 const LabelFrame = require('../renderer/utils/label/label-frame');
+const RenderFlow = require('../renderer/render-flow');
 const opacityFlag = RenderFlow.FLAG_COLOR | RenderFlow.FLAG_OPACITY;
+
 /**
  * !#en Enum for text alignment.
  * !#zh 文本横向对齐类型
@@ -536,6 +535,7 @@ let Label = cc.Class({
         // Keep track of Node size
         this.node.on(cc.Node.EventType.SIZE_CHANGED, this._updateRenderData, this);
         this.node.on(cc.Node.EventType.ANCHOR_CHANGED, this._updateRenderData, this);
+        this.node.on(cc.Node.EventType.COLOR_CHANGED, this._updateColor, this);
 
         this._checkStringEmpty();
         this._updateRenderData(true);
@@ -545,6 +545,7 @@ let Label = cc.Class({
         this._super();
         this.node.off(cc.Node.EventType.SIZE_CHANGED, this._updateRenderData, this);
         this.node.off(cc.Node.EventType.ANCHOR_CHANGED, this._updateRenderData, this);
+        this.node.off(cc.Node.EventType.COLOR_CHANGED, this._updateColor, this);
     },
 
     onDestroy () {
@@ -557,7 +558,7 @@ let Label = cc.Class({
         }
         this._super();
     },
-    
+
     _canRender () {
         let result = this._super();
         let font = this.font;
@@ -575,6 +576,11 @@ let Label = cc.Class({
         this.markForRender(!!this.string);
     },
 
+    _on3DNodeChanged () {
+        this._updateAssembler();
+        this._applyFontTexture(true);
+    },
+
     _updateAssembler () {
         let assembler = Label._assembler.getAssembler(this);
 
@@ -586,6 +592,7 @@ let Label = cc.Class({
 
         if (!this._renderData) {
             this._renderData = this._assembler.createData(this);
+            this.markForUpdateRenderData(true);
         }
     },
 
@@ -646,19 +653,14 @@ let Label = cc.Class({
 
     _updateColor () {
         let font = this.font;
-        if (font instanceof cc.BitmapFont) {
-            this._super();
-        } else {
+        if (!(font instanceof cc.BitmapFont)) {
             this._updateRenderData();
             this.node._renderFlag &= ~RenderFlow.FLAG_COLOR;
         }
     },
 
     _activateMaterial (force) {
-        let material = this._material;
-        if (material && !force) {
-            return;
-        }
+        if (!force) return;
 
         // Canvas
         if (cc.game.renderType === cc.game.RENDER_TYPE_CANVAS) {
@@ -666,13 +668,19 @@ let Label = cc.Class({
         }
         // WebGL
         else {
+            // Label's texture is generated dynamically,
+            // we should always get a material instance for this label.
+            let material = this.sharedMaterials[0];
+
             if (!material) {
-                material = new SpriteMaterial();
+                material = Material.getInstantiatedBuiltinMaterial('2d-sprite', this);
             }
-            material.texture = this._frame._texture;
-            // For batch rendering, do not use uniform color.
-            material.useColor = false;
-            this._updateMaterial(material);
+            else {
+                material = Material.getInstantiatedMaterial(material, this);
+            }
+
+            material.setProperty('texture', this._frame._texture);
+            this.setMaterial(0, material);
         }
 
         this.markForUpdateRenderData(true);
@@ -690,20 +698,6 @@ let Label = cc.Class({
         if (force) {
             this._updateAssembler();
             this._applyFontTexture(force);
-        }
-    },
-
-    _calDynamicAtlas () {
-        if (!dynamicAtlasManager) return;
-
-        if (!this._frame._original) {
-            let frame = dynamicAtlasManager.insertSpriteFrame(this._frame);
-            if (frame) {
-                this._frame._setDynamicAtlasFrame(frame);
-            }
-        }
-        if (this._material._texture !== this._frame._texture) {
-            this._activateMaterial(true);
         }
     },
 

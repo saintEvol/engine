@@ -106,9 +106,9 @@ let dynamicAtlasManager = {
         if (CC_EDITOR) return null;
         if (!_enabled || _atlasIndex === _maxAtlasCount ||
             !spriteFrame || spriteFrame._original) return null;
-
+        
         let texture = spriteFrame._texture;
-        if (texture instanceof cc.RenderTexture) return null;
+        if (texture instanceof cc.RenderTexture || texture._isCompressed()) return null;
 
         let w = texture.width, h = texture.height;
         if (w > _maxFrameSize || h > _maxFrameSize || w <= _minFrameSize || h <= _minFrameSize

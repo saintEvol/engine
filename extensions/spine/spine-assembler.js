@@ -25,13 +25,11 @@
 
 const Skeleton = require('./Skeleton');
 const spine = require('./lib/spine');
-const renderer = require('../../cocos2d/core/renderer');
 const RenderFlow = require('../../cocos2d/core/renderer/render-flow');
-const renderEngine = renderer.renderEngine;
-const gfx = renderEngine.gfx;
 const VertexFormat = require('../../cocos2d/core/renderer/webgl/vertex-format')
 const VFOneColor = VertexFormat.vfmtPosUvColor;
 const VFTwoColor = VertexFormat.vfmtPosUvTwoColor;
+const gfx = cc.gfx;
 
 const FLAG_BATCH = 0x10;
 const FLAG_TWO_COLOR = 0x01;
@@ -68,6 +66,7 @@ let _finalColor32, _darkColor32;
 let _vertexFormat;
 let _perVertexSize;
 let _perClipVertexSize;
+
 let _vertexFloatCount = 0, _vertexCount = 0, _vertexFloatOffset = 0, _vertexOffset = 0,
     _indexCount = 0, _indexOffset = 0, _vfOffset = 0;
 let _tempr, _tempg, _tempb;
@@ -99,31 +98,24 @@ function _getSlotMaterial (tex, blendMode) {
             break;
     }
 
-    let useModel = !_comp.enableBatch;
-    let key = tex.url + src + dst + _useTint + useModel;
-    let baseMaterial = _comp._material;
+    let key = tex.url + src + dst;
+    let baseMaterial = _comp.sharedMaterials[0];
     if (!baseMaterial) return null;
 
     let materialCache = _comp._materialCache;
     let material = materialCache[key];
     if (!material) {
+        material = new cc.Material();
+        material.copy(baseMaterial);
+        material.define('_USE_MODEL', true);
+        material.define('USE_TINT', _useTint);
+        // update texture
+        material.setProperty('texture', tex);
 
-        var baseKey = baseMaterial._hash;
-        if (!materialCache[baseKey]) {
-            material = baseMaterial;
-        } else {
-            material = baseMaterial.clone();
-        }
-
-        material.useModel = useModel;
-        // Update texture.
-        material.texture = tex;
-        // Update tint.
-        material.useTint = _useTint;
-
-        // Update blend function.
-        let pass = material._mainTech.passes[0];
+        // update blend function
+        let pass = material.effect.getDefaultTechnique().passes[0];
         pass.setBlend(
+            true,
             gfx.BLEND_FUNC_ADD,
             src, dst,
             gfx.BLEND_FUNC_ADD,
@@ -132,8 +124,8 @@ function _getSlotMaterial (tex, blendMode) {
         material.updateHash(key);
         materialCache[key] = material;
     }
-    else if (material.texture !== tex) {
-        material.texture = tex;
+    else if (material.getProperty('texture') !== tex) {
+        material.setProperty('texture', tex);
         material.updateHash(key);
     }
     return material;
@@ -161,7 +153,7 @@ function _handleColor (color) {
 
 var spineAssembler = {
 
-    updateRenderData (comp, batchData) {
+    updateRenderData (comp) {
         let skeleton = comp._skeleton;
         if (skeleton) {
             skeleton.updateWorldTransform();

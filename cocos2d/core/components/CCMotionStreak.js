@@ -25,8 +25,9 @@
  ****************************************************************************/
 
 const RenderComponent = require('../components/CCRenderComponent');
-const SpriteMaterial = require('../renderer/render-engine').SpriteMaterial;
+const Material = require('../assets/material/CCMaterial');
 const textureUtil = require('../utils/texture-util');
+const BlendFunc = require('../../core/utils/blend-func');
 
 /**
  * !#en
@@ -50,7 +51,7 @@ var MotionStreak = cc.Class({
     //   2.Need to update the position in each frame by itself because we don't know
     //     whether the global position have changed
     extends: RenderComponent,
-    mixins: [RenderComponent.BlendFactorPolyfill],
+    mixins: [BlendFunc],
 
     editor: CC_EDITOR && {
         menu: 'i18n:MAIN_MENU.component.others/MotionStreak',
@@ -241,24 +242,23 @@ var MotionStreak = cc.Class({
     },
 
     _activateMaterial () {
-        let material = this._material;
-        if (!material) {
-            material = this._material = new SpriteMaterial();
-            material.useColor = false;
+        if (!this._texture || !this._texture.loaded) {
+            this.disableRender();
+            return;
         }
-        
-        if (this._texture && this._texture.loaded) {
-            material.texture = this._texture;
-            this._updateMaterial(material);
-            this.markForRender(true);
-            this.markForUpdateRenderData(true);
-        }
-    },
 
-    _updateMaterial (material) {
-        this._material = material;
-        this._updateBlendFunc();
-        material.updateHash();
+        let material = this.sharedMaterials[0];
+        if (!material) {
+            material = Material.getInstantiatedBuiltinMaterial('2d-sprite', this);
+        }
+        else {
+            material = Material.getInstantiatedMaterial(material, this);
+        }
+
+        material.setProperty('texture', this._texture);
+
+        this.setMaterial(0, material);
+        this.markForRender(true);
     },
 
     onFocusInEditor: CC_EDITOR && function () {

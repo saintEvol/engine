@@ -105,6 +105,15 @@ module.exports = {
             'actualFontSize': 'SHRINK 模式下面文本实际渲染的字体大小',
             'spacingX': '文字之间 x 轴的间距',
         },
+        "outline": {
+            "color": "描边的颜色",
+            "width": "描边的宽度",
+        },
+        "shadow": {
+            "color": "阴影的颜色",
+            "offset": "字体与阴影的偏移",
+            "blur": "阴影的模糊程度"
+        },
         'progress': {
             'bar_sprite': '进度条显示用的 Sprite 节点，可以动态改变尺寸',
             'mode': '进度条显示模式，目前支持水平和垂直两种',
@@ -217,19 +226,15 @@ module.exports = {
         },
         'editbox': {
             "string": "输入框的初始输入内容，如果为空则会显示占位符的文本",
-            "backgroundImage": "输入框的背景图片",
+            "background": "输入框背景节点上挂载的 Sprite 组件对象",
             "input_flag": "指定输入标识：可以指定输入方式为密码或者单词首字母大写",
             "returnType": "指定移动设备上面回车按钮的样式",
             "input_mode": "指定输入模式: ANY表示多行输入，其它都是单行输入，移动平台上还可以指定键盘样式。",
-            "font_size": "输入框文本的字体大小",
-            "line_height": "输入框文本的行高",
-            "font_color": "输入框文本的颜色",
-            "stay_on_top": "设置为 True 则输入框总是可见，并且永远在游戏视图的上面，该属性会在 v2.1 中移除",
             "tab_index": "修改 DOM 输入元素的 tabIndex，这个属性只有在 Web 上面修改有意义。",
             "placeholder": "输入框占位符的文本内容",
-            "placeholder_font_size": "输入框占位符的字体大小",
-            "placeholder_font_color": "输入框占位符的字体颜色",
             "max_length": "输入框最大允许输入的字符个数",
+            "textLabel": "输入框输入文本节点上挂载的 Label 组件对象",
+            "placeholderLabel": "输入框占位符节点上挂载的 Label 组件对象"
         },
         "videoplayer": {
             "resourceType": "视频来源，支持本地视频 URL 和远程视频 URL",
@@ -404,10 +409,13 @@ module.exports = {
             'layer': '指定 TiledTile 属于哪一个 TiledLayer'
         },
         'wx_subcontext_view': {
-            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置'
+            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置',
         },
         'swan_subcontext_view': {
-            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置'
-        }
+            'fps': '开放数据域的 FPS, 该属性会覆盖开放域的帧率设置',
+        },
+        'skeleton_animation': {
+            'search_animation_clips': '搜索骨骼动画',
+        },
     }
 };

@@ -27,7 +27,7 @@
 const TrackEntryListeners = require('./track-entry-listeners');
 const RenderComponent = require('../../cocos2d/core/components/CCRenderComponent');
 const spine = require('./lib/spine');
-const SpineMaterial = require('../../cocos2d/core/renderer/render-engine').SpineMaterial;
+const Material = require('../../cocos2d/core/assets/material/CCMaterial');
 const Graphics = require('../../cocos2d/core/graphics/graphics');
 
 let SkeletonCache = require('./skeleton-cache');
@@ -412,7 +412,6 @@ sp.Skeleton = cc.Class({
         this._rootBone = null;
         this._listener = null;
         this._boundingBox = cc.rect();
-        this._material = new SpineMaterial();
         this._materialCache = {};
         this._debugRenderer = null;
         this._startSlotIndex = -1;
@@ -422,8 +421,8 @@ sp.Skeleton = cc.Class({
     },
 
     // override
-    _updateMaterial (material) {
-        this._super(material);
+    setMaterial (index, material) {
+        this._super(index, material);
         this._materialCache = {};
     },
 
@@ -432,7 +431,7 @@ sp.Skeleton = cc.Class({
         for (var mKey in cache) {
             var material = cache[mKey];
             if (material) {
-                material.useTint = this.useTint;
+                material.define('USE_TINT', this.useTint);
             }
         }
     },
@@ -544,6 +543,8 @@ sp.Skeleton = cc.Class({
         if (CC_JSB) {
             this._cacheMode = AnimationCacheMode.REALTIME;
         }
+
+        this._activateMaterial();
 
         this._updateSkeletonData();
         this._updateDebugDraw();
@@ -664,13 +665,29 @@ sp.Skeleton = cc.Class({
         }
     },
 
+    _activateMaterial () {
+        let material = this.sharedMaterials[0];
+        if (!material) {
+            material = Material.getInstantiatedBuiltinMaterial('2d-spine', this);
+        }
+        else {
+            material = Material.getInstantiatedMaterial(material, this);
+        }
+
+        material.define('_USE_MODEL', true);
+
+        this.setMaterial(0, material);
+        this.markForRender(true);
+    },
+
+    onEnable () {
+        this._super();
+        this._activateMaterial();
+    },
+
     onRestore () {
         // Destroyed and restored in Editor
-        if (!this._material) {
-            this._boundingBox = cc.rect();
-            this._material = new SpineMaterial();
-            this._materialCache = {};
-        }
+        this._boundingBox = cc.rect();
     },
 
     // RENDERER

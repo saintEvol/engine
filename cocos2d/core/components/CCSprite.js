@@ -28,10 +28,9 @@ const misc = require('../utils/misc');
 const NodeEvent = require('../CCNode').EventType;
 const RenderComponent = require('./CCRenderComponent');
 const RenderFlow = require('../renderer/render-flow');
-const renderEngine = require('../renderer/render-engine');
-const SpriteMaterial = renderEngine.SpriteMaterial;
-const GraySpriteMaterial = renderEngine.GraySpriteMaterial;
-const dynamicAtlasManager = require('../renderer/utils/dynamic-atlas/manager');
+const BlendFunc = require('../utils/blend-func');
+
+const Material = require('../assets/material/CCMaterial');
 
 /**
  * !#en Enum for sprite type.
@@ -126,6 +125,7 @@ var SizeMode = cc.Enum({
  * !#en Sprite state can choice the normal or grayscale.
  * !#zh 精灵颜色通道模式。
  * @enum Sprite.State
+ * @deprecated
  */
 var State = cc.Enum({
     /**
@@ -156,13 +156,7 @@ var State = cc.Enum({
 var Sprite = cc.Class({
     name: 'cc.Sprite',
     extends: RenderComponent,
-    mixins: [RenderComponent.BlendFactorPolyfill],
-
-    ctor () {
-        this._assembler = null;
-        this._graySpriteMaterial = null;
-        this._spriteMaterial = null;
-    },
+    mixins: [BlendFunc],
 
     editor: CC_EDITOR && {
         menu: 'i18n:MAIN_MENU.component.renderers/Sprite',
@@ -182,7 +176,6 @@ var Sprite = cc.Class({
         _fillStart: 0,
         _fillRange: 0,
         _isTrimmedMode: true,
-        _state: 0,
         _atlas: {
             default: null,
             type: cc.SpriteAtlas,
@@ -420,22 +413,18 @@ var Sprite = cc.Class({
      * @method setState
      * @see `Sprite.State`
      * @param state {Sprite.State} NORMAL or GRAY State.
+     * @deprecated
      */
-    setState: function (state) {
-        if (this._state === state) return;
-        this._state = state;
-        this._activateMaterial();
-    },
+    setState () {},
 
     /**
      * Gets the current state.
      * @method getState
      * @see `Sprite.State`
      * @return {Sprite.State}
+     * @deprecated
      */
-    getState: function () {
-        return this._state;
-    },
+    getState () {},
 
     onEnable: function () {
         this._super();
@@ -468,6 +457,10 @@ var Sprite = cc.Class({
         this.markForUpdateRenderData(true);
     },
 
+    _on3DNodeChanged () {
+        this._updateAssembler();
+    },
+
     _updateAssembler: function () {
         let assembler = Sprite._assembler.getAssembler(this);
         
@@ -478,64 +471,38 @@ var Sprite = cc.Class({
 
         if (!this._renderData) {
             this._renderData = this._assembler.createData(this);
-            this._renderData.material = this._material;
             this.markForUpdateRenderData(true);
         }
     },
 
     _activateMaterial: function () {
-        let spriteFrame = this._spriteFrame;
-
-        // WebGL
-        if (cc.game.renderType !== cc.game.RENDER_TYPE_CANVAS) {
-            // Get material
-            let material;
-            if (this._state === State.GRAY) {
-                if (!this._graySpriteMaterial) {
-                    this._graySpriteMaterial = new GraySpriteMaterial();
-                }
-                material = this._graySpriteMaterial;
-            }
-            else {
-                if (!this._spriteMaterial) {
-                    this._spriteMaterial = new SpriteMaterial();
-                }
-                material = this._spriteMaterial;
-            }
-            // For batch rendering, do not use uniform color.
-            material.useColor = false;
-            // Set texture
-            if (spriteFrame && spriteFrame.textureLoaded()) {
-                let texture = spriteFrame.getTexture();
-                if (material.texture !== texture) {
-                    material.texture = texture;
-                    this._updateMaterial(material);
-                }
-                else if (material !== this._material) {
-                    this._updateMaterial(material);
-                }
-                if (this._renderData) {
-                    this._renderData.material = material;
-                }
-
-                this.node._renderFlag |= RenderFlow.FLAG_COLOR;
-                this.markForUpdateRenderData(true);
-                this.markForRender(true);
-            }
-            else {
-                this.disableRender();
-            }
-        }
-        else {
+        // If render type is canvas, just return.
+        if (cc.game.renderType === cc.game.RENDER_TYPE_CANVAS) {
             this.markForUpdateRenderData(true);
             this.markForRender(true);
+            return;
         }
-    },
 
-    _updateMaterial (material) {
-        this._material = material;
-        this._updateBlendFunc();
-        material.updateHash();
+        let spriteFrame = this._spriteFrame;
+        // If spriteframe not loaded, disable render and return.
+        if (!spriteFrame || !spriteFrame.textureLoaded()) {
+            this.disableRender();
+            return;
+        }
+        
+        // make sure material is belong to self.
+        let material = this.sharedMaterials[0];
+        if (!material) {
+            material = Material.getInstantiatedBuiltinMaterial('2d-sprite', this);
+        }
+        else {
+            material = Material.getInstantiatedMaterial(material, this);
+        }
+        
+        material.setProperty('texture', spriteFrame.getTexture());
+
+        this.setMaterial(0, material);
+        this.markForRender(true);
     },
 
     _applyAtlas: CC_EDITOR && function (spriteFrame) {
@@ -555,7 +522,7 @@ var Sprite = cc.Class({
             if (!this._enabled) return false;
         }
         else {
-            if (!this._enabled || !this._material || !this.node._activeInHierarchy) return false;
+            if (!this._enabled || !this.sharedMaterials[0] || !this.node._activeInHierarchy) return false;
         }
 
         let spriteFrame = this._spriteFrame;
@@ -608,7 +575,8 @@ var Sprite = cc.Class({
         }
 
         var spriteFrame = this._spriteFrame;
-        if (!spriteFrame || (this._material && this._material._texture) !== (spriteFrame && spriteFrame._texture)) {
+        let material = this.sharedMaterials[0];
+        if (!spriteFrame || (material && material._texture) !== (spriteFrame && spriteFrame._texture)) {
             // disable render flow until texture is loaded
             this.markForRender(false);
         }
@@ -655,21 +623,6 @@ var Sprite = cc.Class({
             }
         }
     },
-
-    _calDynamicAtlas ()
-    {
-        if (!this._spriteFrame) return;
-        
-        if (!this._spriteFrame._original && dynamicAtlasManager) {
-            let frame = dynamicAtlasManager.insertSpriteFrame(this._spriteFrame);
-            if (frame) {
-                this._spriteFrame._setDynamicAtlasFrame(frame);
-            }
-        }
-        if (this._material._texture !== this._spriteFrame._texture) {
-            this._activateMaterial();
-        }
-    }
 });
 
 if (CC_EDITOR) {

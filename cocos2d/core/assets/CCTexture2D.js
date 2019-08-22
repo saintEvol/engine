@@ -25,10 +25,10 @@
  ****************************************************************************/
 
 const EventTarget = require('../event/event-target');
-const renderEngine = require('../renderer/render-engine');
 const renderer = require('../renderer');
 require('../platform/CCClass');
-const gfx = renderEngine.gfx;
+
+import gfx from '../../renderer/gfx';
 
 const GL_NEAREST = 9728;                // gl.NEAREST
 const GL_LINEAR = 9729;                 // gl.LINEAR
@@ -98,6 +98,13 @@ const PixelFormat = cc.Enum({
      */
     RGBA8888: gfx.TEXTURE_FMT_RGBA8,
     /**
+     * 32-bit float texture: RGBA32F
+     * @property RGBA32F
+     * @readonly
+     * @type {Number}
+     */
+    RGBA32F: gfx.TEXTURE_FMT_RGBA32F,
+    /**
      * 8-bit textures used as masks
      * @property A8
      * @readonly
@@ -117,7 +124,66 @@ const PixelFormat = cc.Enum({
      * @readonly
      * @type {Number}
      */
-    AI8: gfx.TEXTURE_FMT_L8_A8
+    AI8: gfx.TEXTURE_FMT_L8_A8,
+
+    /**
+     * rgb 2 bpp pvrtc
+     * @property RGB_PVRTC_2BPPV1
+     * @readonly
+     * @type {Number}
+     */
+    RGB_PVRTC_2BPPV1: gfx.TEXTURE_FMT_RGB_PVRTC_2BPPV1,
+    /**
+     * rgba 2 bpp pvrtc
+     * @property RGBA_PVRTC_2BPPV1
+     * @readonly
+     * @type {Number}
+     */
+    RGBA_PVRTC_2BPPV1: gfx.TEXTURE_FMT_RGBA_PVRTC_2BPPV1,
+    /**
+     * rgb 4 bpp pvrtc
+     * @property RGB_PVRTC_4BPPV1
+     * @readonly
+     * @type {Number}
+     */
+    RGB_PVRTC_4BPPV1: gfx.TEXTURE_FMT_RGB_PVRTC_4BPPV1,
+    /**
+     * rgba 4 bpp pvrtc
+     * @property RGBA_PVRTC_4BPPV1
+     * @readonly
+     * @type {Number}
+     */
+    RGBA_PVRTC_4BPPV1: gfx.TEXTURE_FMT_RGBA_PVRTC_4BPPV1,
+    /**
+     * rgb etc1
+     * @property RGB_ETC1
+     * @readonly
+     * @type {Number}
+     */
+    RGB_ETC1: gfx.TEXTURE_FMT_RGB_ETC1,
+    /**
+     * rgba etc1
+     * @property RGBA_ETC1
+     * @readonly
+     * @type {Number}
+     */
+    // gfx do not have a standard definition for RGBA_ETC1, need define a specified number for it.
+    RGBA_ETC1: 1024,
+
+    /**
+     * rgb etc2
+     * @property RGB_ETC2
+     * @readonly
+     * @type {Number}
+     */
+    RGB_ETC2: gfx.TEXTURE_FMT_RGB_ETC2,
+    /**
+     * rgba etc2
+     * @property RGBA_ETC2
+     * @readonly
+     * @type {Number}
+     */
+    RGBA_ETC2: gfx.TEXTURE_FMT_RGBA_ETC2,
 });
 
 /**
@@ -217,8 +283,13 @@ var Texture2D = cc.Class({
                 // maybe returned to pool in webgl
                 return this._image;
             },
-            set (image) {
-                this.initWithElement(image);
+            set (data) {
+                if (data._compressed && data._data) {
+                    this.initWithData(data._data, this._format, data.width, data.height);
+                }
+                else {
+                    this.initWithElement(data);
+                }
             },
             override: true
         },
@@ -228,6 +299,7 @@ var Texture2D = cc.Class({
         _flipY: false,
         _minFilter: Filter.LINEAR,
         _magFilter: Filter.LINEAR,
+        _mipFilter: Filter.LINEAR,
         _wrapS: WrapMode.CLAMP_TO_EDGE,
         _wrapT: WrapMode.CLAMP_TO_EDGE,
     },
@@ -239,7 +311,7 @@ var Texture2D = cc.Class({
         _FilterIndex: FilterIndex,
 
         // predefined most common extnames
-        extnames: ['.png', '.jpg', '.jpeg', '.bmp', '.webp']
+        extnames: ['.png', '.jpg', '.jpeg', '.bmp', '.webp', '.pvr', '.pkm'],
     },
 
     ctor () {
@@ -289,12 +361,16 @@ var Texture2D = cc.Class({
         this._hashDirty = true;
         this._hash = 0;
         this._texture = null;
+        
+        if (CC_EDITOR) {
+            this._exportedExts = null;
+        }
     },
 
     /**
      * !#en
      * Get renderer texture implementation object
-     * extended from renderEngine.TextureAsset
+     * extended from render.Texture2D
      * !#zh  返回渲染器内部贴图对象
      * @method getImpl
      */
@@ -340,6 +416,10 @@ var Texture2D = cc.Class({
             if (options.magFilter !== undefined) {
                 this._magFilter = options.magFilter;
                 options.magFilter = FilterIndex[options.magFilter];
+            }
+            if (options.mipFilter !== undefined) {
+                this._mipFilter = options.mipFilter;
+                options.mipFilter = FilterIndex[options.mipFilter];
             }
             if (options.wrapS !== undefined) {
                 this._wrapS = options.wrapS;
@@ -439,13 +519,16 @@ var Texture2D = cc.Class({
         opts.wrapS = this._wrapS;
         opts.wrapT = this._wrapT;
         opts.format = pixelFormat;
+        if (pixelFormat === PixelFormat.RGBA_ETC1) {
+            opts.format = PixelFormat.RGB_ETC1;
+        }
         opts.width = pixelsWidth;
         opts.height = pixelsHeight;
         if (!this._texture) {
             this._texture = new renderer.Texture2D(renderer.device, opts);
         }
         else {
-            this.update(opts);
+            this._texture.update(opts);
         }
         this.width = pixelsWidth;
         this.height = pixelsHeight;
@@ -540,6 +623,9 @@ var Texture2D = cc.Class({
         opts.height = this.height;
         opts.hasMipmap = this._hasMipmap;
         opts.format = this._format;
+        if (this._format === PixelFormat.RGBA_ETC1) {
+            opts.format = PixelFormat.RGB_ETC1;
+        }
         opts.premultiplyAlpha = this._premultiplyAlpha;
         opts.flipY = this._flipY;
         opts.minFilter = FilterIndex[this._minFilter];
@@ -665,19 +751,60 @@ var Texture2D = cc.Class({
         }
     },
 
+    _getOpts() {
+        let opts = _getSharedOptions();
+        opts.width = this.width;
+        opts.height = this.height;
+        opts.mipmap = this._genMipmap;
+        opts.format = this._format;
+        opts.premultiplyAlpha = this._premultiplyAlpha;
+        opts.anisotropy = this._anisotropy;
+        opts.flipY = this._flipY;
+        opts.minFilter = FilterIndex[this._minFilter];
+        opts.magFilter = FilterIndex[this._magFilter];
+        opts.mipFilter = FilterIndex[this._mipFilter];
+        opts.wrapS = this._wrapS;
+        opts.wrapT = this._wrapT;
+        return opts;
+    },
+
+    _resetUnderlyingMipmaps(mipmapSources) {
+        const opts = this._getOpts();
+        opts.images = mipmapSources || [null];
+        if (!this._texture) {
+            this._texture = new renderer.Texture2D(renderer.device, opts);
+        } else {
+            this._texture.update(opts);
+        }
+    },
+
     // SERIALIZATION
 
     _serialize: (CC_EDITOR || CC_TEST) && function () {
         let extId = "";
-        if (this._native) {
-            // encode extname
-            let ext = cc.path.extname(this._native);
-            if (ext) {
-                extId = Texture2D.extnames.indexOf(ext);
-                if (extId < 0) {
-                    extId = ext;
+        let exportedExts = this._exportedExts;
+        if (!exportedExts && this._native) {
+            exportedExts = [this._native];
+        }
+        if (exportedExts) {
+            let exts = [];
+            for (let i = 0; i < exportedExts.length; i++) {
+                let extId = "";
+                let ext = exportedExts[i]
+                if (ext) {
+                    // ext@format
+                    let extFormat = ext.split('@');
+                    extId = Texture2D.extnames.indexOf(extFormat[0]);
+                    if (extId < 0) {
+                        extId = ext;
+                    }
+                    if (extFormat[1]) {
+                        extId += '@' + extFormat[1];
+                    }
                 }
+                exts.push(extId);
             }
+            extId = exts.join('_');
         }
         let asset = "" + extId + "," + 
                     this._minFilter + "," + this._magFilter + "," + 
@@ -687,13 +814,50 @@ var Texture2D = cc.Class({
     },
 
     _deserialize: function (data, handle) {
+        let device = cc.renderer.device;
+
         let fields = data.split(',');
         // decode extname
-        var extIdStr = fields[0];
+        let extIdStr = fields[0];
         if (extIdStr) {
-            let extId = extIdStr.charCodeAt(0) - CHAR_CODE_0;
-            let ext = Texture2D.extnames[extId];
-            this._setRawAsset(ext || extIdStr);
+            let extIds = extIdStr.split('_');
+
+            let extId = 999;
+            let ext = '';
+            let format = this._format;
+            let SupportTextureFormats = cc.macro.SUPPORT_TEXTURE_FORMATS;
+            for (let i = 0; i < extIds.length; i++) {
+                let extFormat = extIds[i].split('@');
+                let tmpExt = extFormat[0];
+                tmpExt = tmpExt.charCodeAt(0) - CHAR_CODE_0;
+                tmpExt = Texture2D.extnames[tmpExt] || extFormat;
+
+                let index = SupportTextureFormats.indexOf(tmpExt);
+                if (index !== -1 && index < extId) {
+                    
+                    let tmpFormat = extFormat[1] ? parseInt(extFormat[1]) : this._format;
+
+                    // check whether or not support compressed texture
+                    if ( tmpExt === '.pvr' && !device.ext('WEBGL_compressed_texture_pvrtc')) {
+                        continue;
+                    }
+                    else if ((tmpFormat === PixelFormat.RGB_ETC1 || tmpFormat === PixelFormat.RGBA_ETC1) && !device.ext('WEBGL_compressed_texture_etc1')) {
+                        continue;
+                    }
+                    else if ((tmpFormat === PixelFormat.RGB_ETC2 || tmpFormat === PixelFormat.RGBA_ETC2) && !device.ext('WEBGL_compressed_texture_etc')) {
+                        continue;
+                    }
+
+                    extId = index;
+                    ext = tmpExt;
+                    format = tmpFormat;
+                }
+            }
+
+            if (ext) {
+                this._setRawAsset(ext);
+                this._format = format;
+            }
 
             // preset uuid to get correct nativeUrl
             let loadingItem = handle.customEnv;
@@ -740,6 +904,10 @@ var Texture2D = cc.Class({
         return this._hash;
     },
 
+    _isCompressed () {
+        return this._texture && this._texture._compressed;
+    },
+    
     _clearImage () {
         // wechat game platform will cache image parsed data, 
         // so image will consume much more memory than web, releasing it

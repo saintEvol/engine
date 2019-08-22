@@ -25,7 +25,7 @@
  ****************************************************************************/
 
 const RenderComponent = require('../../cocos2d/core/components/CCRenderComponent');
-const SpriteMaterial = require('../../cocos2d/core/renderer/render-engine').SpriteMaterial;
+const Material = require('../../cocos2d/core/assets/material/CCMaterial');
 
 let EventTarget = require('../../cocos2d/core/event/event-target');
 
@@ -150,6 +150,7 @@ let ArmatureDisplay = cc.Class({
                 // parse the atlas asset data
                 this._parseDragonAtlasAsset();
                 this._refresh();
+                this._activateMaterial();
             },
             tooltip: CC_DEV && 'i18n:COMPONENT.dragon_bones.dragon_bones_atlas_asset'
         },
@@ -385,7 +386,6 @@ let ArmatureDisplay = cc.Class({
     },
 
     ctor () {
-        this._material = new SpriteMaterial;
         // Property _materialCache Use to cache material,since dragonBones may use multiple texture,
         // it will clone from the '_material' property,if the dragonbones only have one texture,
         // it will just use the _material,won't clone it.
@@ -421,8 +421,8 @@ let ArmatureDisplay = cc.Class({
     },
 
     // override
-    _updateMaterial (material) {
-        this._super(material);
+    setMaterial (index, material) {
+        this._super(index, material);
         this._materialCache = {};
     },
 
@@ -440,6 +440,8 @@ let ArmatureDisplay = cc.Class({
         
         this._parseDragonAtlasAsset();
         this._refresh();
+
+        this._activateMaterial();
 
         let children = this.node.children;
         for (let i = 0, n = children.length; i < n; i++) {
@@ -464,14 +466,6 @@ let ArmatureDisplay = cc.Class({
      */
     getArmatureKey () {
         return this._armatureKey;
-    },
-
-    onRestore () {
-        // Destroyed and restored in Editor
-        if (!this._material) {
-            this._material = new SpriteMaterial();
-            this._materialCache = {};
-        }
     },
 
     /**
@@ -511,6 +505,7 @@ let ArmatureDisplay = cc.Class({
         if (this._armature && !this.isAnimationCached()) {
             this._factory._dragonBones.clock.add(this._armature);
         }
+        this._activateMaterial();
     },
 
     onDisable () {
@@ -609,6 +604,29 @@ let ArmatureDisplay = cc.Class({
         else if (this._debugDraw) {
             this._debugDraw.node.parent = null;
         }
+    },
+
+    _activateMaterial () {
+        let texture = this.dragonAtlasAsset && this.dragonAtlasAsset.texture;
+        if (!texture) {
+            this.disableRender();
+            return;
+        }
+
+        // Get material
+        let material = this.sharedMaterials[0];
+        if (!material) {
+            material = Material.getInstantiatedBuiltinMaterial('2d-sprite', this);
+        }
+        else {
+            material = Material.getInstantiatedMaterial(material, this);
+        }
+
+        material.define('_USE_MODEL', true);
+        material.setProperty('texture', texture);
+        
+        this.setMaterial(0, material);
+        this.markForRender(true);
     },
 
     _buildArmature () {

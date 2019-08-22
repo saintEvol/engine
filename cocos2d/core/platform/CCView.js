@@ -535,6 +535,7 @@ cc.js.mixin(View.prototype, {
         }
         else {
             this._autoFullScreen = false;
+            cc.screen.disableAutoFullScreen(cc.game.frame);
         }
     },
 

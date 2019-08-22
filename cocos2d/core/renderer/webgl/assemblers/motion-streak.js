@@ -84,7 +84,7 @@ var motionStreakAssembler = {
         let size = comp.node._contentSize;
         let anchor = comp.node._anchorPoint;
         renderData.updateSizeNPivot(size.width, size.height, anchor.x, anchor.y);
-        renderData.material = comp.getMaterial();
+        renderData.material = comp.sharedMaterials[0];
     },
 
     update (comp, dt) {
@@ -186,7 +186,7 @@ var motionStreakAssembler = {
         }
 
         renderData.vertexCount = renderData.dataLength;
-        renderData.indiceCount = renderData.vertexCount < 2 ? 0 : (renderData.vertexCount - 2)*3;
+        renderData.indiceCount = renderData.vertexCount <= 2 ? 0 : (renderData.vertexCount - 2)*3;
     },
 
     fillBuffers (comp, renderer) {

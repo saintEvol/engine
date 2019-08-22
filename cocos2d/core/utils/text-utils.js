@@ -24,7 +24,20 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+// Draw text the textBaseline ratio (Can adjust the appropriate baseline ratio based on the platform)
+let _BASELINE_RATIO = 0.26;
+if (CC_JSB) {
+    _BASELINE_RATIO = 0;
+}
+else if (CC_RUNTIME) {
+    _BASELINE_RATIO = -0.2;
+}
+
 var textUtils = {
+
+    BASELINE_RATIO: _BASELINE_RATIO,
+    MIDDLE_RATIO: (_BASELINE_RATIO + 1) / 2 - _BASELINE_RATIO,
+
     label_wordRex : /([a-zA-Z0-9ÄÖÜäöüßéèçàùêâîôûа-яА-ЯЁё]+|\S)/,
     label_symbolRex : /^[!,.:;'}\]%\?>、‘“》？。，！]/,
     label_lastWordRex : /([a-zA-Z0-9ÄÖÜäöüßéèçàùêâîôûаíìÍÌïÁÀáàÉÈÒÓòóŐőÙÚŰúűñÑæÆœŒÃÂãÔõěščřžýáíéóúůťďňĚŠČŘŽÁÍÉÓÚŤżźśóńłęćąŻŹŚÓŃŁĘĆĄ-яА-ЯЁё]+|\S)$/,

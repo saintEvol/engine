@@ -31,9 +31,10 @@ const codec = require('../compression/ZipUtils');
 const PNGReader = require('./CCPNGReader');
 const tiffReader = require('./CCTIFFReader');
 const textureUtil = require('../core/utils/texture-util');
-const renderEngine = require('../core/renderer/render-engine');
 const RenderFlow = require('../core/renderer/render-flow');
 const ParticleSimulator = require('./particle-simulator');
+const Material = require('../core/assets/material/CCMaterial');
+const BlendFunc = require('../core/utils/blend-func');
 
 function getImageFormatByData (imgData) {
     // if it is a png file buffer.
@@ -541,9 +542,21 @@ var properties = {
      * @property {ParticleSystem.PositionType} positionType
      * @default ParticleSystem.PositionType.FREE
      */
-    positionType: {
+    _positionType: {
         default: PositionType.FREE,
-        type: PositionType
+        formerlySerializedAs: "positionType"
+    },
+
+    positionType: {
+        type: PositionType,
+        get () {
+            return this._positionType;
+        },
+        set (val) {
+            if (this.sharedMaterials[0])
+                this.sharedMaterials[0].define('_USE_MODEL', val !== PositionType.FREE);
+            this._positionType = val;
+        }
     },
 
     /**
@@ -710,7 +723,7 @@ var properties = {
 var ParticleSystem = cc.Class({
     name: 'cc.ParticleSystem',
     extends: RenderComponent,
-    mixins: [RenderComponent.BlendFactorPolyfill],
+    mixins: [BlendFunc],
     editor: CC_EDITOR && {
         menu: 'i18n:MAIN_MENU.component.renderers/ParticleSystem',
         inspector: 'packages://inspector/inspectors/comps/particle-system.js',
@@ -888,7 +901,7 @@ var ParticleSystem = cc.Class({
     },
     
     lateUpdate (dt) {
-        if (!this._simulator.finished && this._material) {
+        if (!this._simulator.finished && this.sharedMaterials[0]) {
             this._simulator.step(dt);
         }
     },
@@ -1104,6 +1117,8 @@ var ParticleSystem = cc.Class({
         this.endSizeVar = parseFloat(dict["finishParticleSizeVariance"] || 0);
 
         // position
+        // Make empty positionType value and old version compatible
+        this.positionType = parseFloat(dict['positionType'] || PositionType.RELATIVE);
         // for 
         this.sourcePos.x = 0;
         this.sourcePos.y = 0;
@@ -1190,36 +1205,34 @@ var ParticleSystem = cc.Class({
         }
     },
 
-    _updateMaterial (material) {
-        this._material = material;
-        this._updateBlendFunc();
-        material.updateHash();
-    },
-
     _activateMaterial: function () {
-        if (!this._material) {
-            this._material = new renderEngine.SpriteMaterial();
-            this._material.useTexture = true;
-            this._material.useModel = true;
-            this._material.useColor = false;
-        }
-
-        if (!this._ia) {
-            ParticleSystem._assembler.createIA(this);
-        }
-
         if (!this._texture || !this._texture.loaded) {
             this.markForCustomIARender(false);
             if (this._renderSpriteFrame) {
                 this._applySpriteFrame();
             }
+
+            return;
+        }
+        
+        if (!this._ia) {
+            ParticleSystem._assembler.createIA(this);
+        }
+
+        let material = this.sharedMaterials[0];
+        if (!material) {
+            material = Material.getInstantiatedBuiltinMaterial('2d-sprite', this);
         }
         else {
-            this.markForUpdateRenderData(true);
-            this.markForCustomIARender(true);
-            this._material.texture = this._texture;
-            this._updateMaterial(this._material);
+            material = Material.getInstantiatedMaterial(material, this);
         }
+
+        // In case the plist lost positionType
+        material.define('_USE_MODEL', this._positionType !== PositionType.FREE);
+        material.setProperty('texture', this._texture);
+
+        this.setMaterial(0, material);
+        this.markForCustomIARender(true);
     },
     
     _finishedSimulation: function () {

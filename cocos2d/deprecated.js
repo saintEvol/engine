@@ -67,6 +67,26 @@ if (CC_DEBUG) {
         });
     }
 
+    function markAsDeprecated (ownerCtor, deprecatedProps, ownerName) {
+        if (!ownerCtor) {
+            return;
+        }
+        ownerName = ownerName || js.getClassName(ownerCtor);
+        let descriptors = Object.getOwnPropertyDescriptors(ownerCtor.prototype);
+        deprecatedProps.forEach(function (prop) {
+            let deprecatedProp = prop[0];
+            let newProp = prop[1];
+            let descriptor = descriptors[deprecatedProp];
+            js.getset(ownerCtor.prototype, deprecatedProp, function () {
+                cc.warnID(1400, `${ownerName}.${deprecatedProp}`, `${ownerName}.${newProp}`);
+                return descriptor.get.call(this);
+            }, function (v) {
+                cc.warnID(1400, `${ownerName}.${deprecatedProp}`, `${ownerName}.${newProp}`);
+                descriptor.set.call(this, v);
+            });
+        })
+    }
+
     function markAsRemovedInObject (ownerObj, removedProps, ownerName) {
         if (!ownerObj) {
             // 可能被裁剪了
@@ -161,6 +181,10 @@ if (CC_DEBUG) {
     markAsRemoved(cc.SpriteFrame, [
         'addLoadedEventListener'
     ]);
+    markFunctionWarning(cc.Sprite.prototype, {
+        setState: 'cc.Sprite.setMaterial',
+        getState: 'cc.Sprite.getMaterial'
+    }, 'cc.Sprite');
 
     // cc.textureCache
     js.get(cc, 'textureCache', function () {
@@ -328,6 +352,12 @@ if (CC_DEBUG) {
         'ignoreAnchorPointForPosition',
         'isRunning',
         '_sgNode',
+    ]);
+
+    markAsDeprecated(cc.Node, [
+        ['rotationX', 'eulerAngles'],
+        ['rotationY', 'eulerAngles'],
+        ['rotation', 'angle'],
     ]);
 
     markFunctionWarning(cc.Node.prototype, {
@@ -601,4 +631,20 @@ if (CC_DEBUG) {
     if (typeof dragonBones !== 'undefined') {
         js.obsolete(dragonBones.CCFactory, 'dragonBones.CCFactory.getFactory', 'getInstance');
     }
+
+    // renderEngine
+    cc.renderer.renderEngine = {
+        get gfx () {
+            cc.warnID(1400, 'cc.renderer.renderEngine.gfx', 'cc.gfx');
+            return cc.gfx;
+        },
+        get math () {
+            cc.warnID(1400, 'cc.renderer.renderEngine.math', 'cc.vmath');
+            return cc.vmath;
+        },
+        get InputAssembler () {
+            cc.warnID(1400, 'cc.renderer.renderEngine.InputAssembler', 'cc.renderer.InputAssembler');
+            return cc.renderer.InputAssembler;
+        }
+    };
 }

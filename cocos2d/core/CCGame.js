@@ -346,16 +346,18 @@ var game = {
             cc.director.getScene().destroy();
             cc.Object._deferredDestroy();
 
-            cc.director.purgeDirector();
-
             // Clean up audio
             if (cc.audioEngine) {
                 cc.audioEngine.uncacheAll();
             }
 
             cc.director.reset();
-            game.onStart();
-            game.emit(game.EVENT_RESTART);
+
+            game.pause();
+            cc.AssetLibrary._loadBuiltins(() => {
+                game.onStart();
+                game.emit(game.EVENT_RESTART);
+            });
         });
     },
 
@@ -394,15 +396,17 @@ var game = {
 
         // Init engine
         this._initEngine();
-        // Log engine version
-        console.log('Cocos Creator v' + cc.ENGINE_VERSION);
+        cc.AssetLibrary._loadBuiltins(() => {
+            // Log engine version
+            console.log('Cocos Creator v' + cc.ENGINE_VERSION);
 
-        this._setAnimFrame();
-        this._runMainLoop();
+            this._setAnimFrame();
+            this._runMainLoop();
 
-        this.emit(this.EVENT_GAME_INITED);
+            this.emit(this.EVENT_GAME_INITED);
 
-        if (cb) cb();
+            if (cb) cb();
+        });
     },
 
     eventTargetOn: EventTarget.prototype.on,
@@ -628,7 +632,7 @@ var game = {
 
         debug.setDisplayStats(config.showFPS);
 
-        callback = function () {
+        callback = function (now) {
             if (!self._paused) {
                 self._intervalId = window.requestAnimFrame(callback);
                 if (!CC_JSB && !CC_RUNTIME && frameRate === 30) {
@@ -636,7 +640,7 @@ var game = {
                         return;
                     }
                 }
-                director.mainLoop();
+                director.mainLoop(now);
             }
         };
 
@@ -786,7 +790,7 @@ var game = {
                 'antialias': cc.macro.ENABLE_WEBGL_ANTIALIAS,
                 'alpha': cc.macro.ENABLE_TRANSPARENT_CANVAS
             };
-            if (CC_WECHATGAME || CC_QQPLAY) {
+            if (CC_QQPLAY) {
                 opts['preserveDrawingBuffer'] = true;
             }
             renderer.initWebGL(localCanvas, opts);

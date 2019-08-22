@@ -57,7 +57,7 @@ RenderComponentHandle.prototype = {
     },
 
     terminate () {
-        this.walking = false;
+
     },
 
     _commitComp (comp, assembler) {

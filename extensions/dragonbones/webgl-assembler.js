@@ -22,11 +22,12 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
+
 const Armature = require('./ArmatureDisplay');
-const renderEngine = require('../../cocos2d/core/renderer/render-engine');
 const RenderFlow = require('../../cocos2d/core/renderer/render-flow');
-const gfx = renderEngine.gfx;
-const math = require('../../cocos2d/core/renderer/render-engine').math;
+const Material = require('../../cocos2d/core/assets/material/CCMaterial');
+const gfx = cc.gfx;
+const mat4 = cc.vmath.mat4;
 const NEED_NONE = 0x00;
 const NEED_COLOR = 0x01;
 const NEED_BATCH = 0x10;
@@ -73,27 +74,24 @@ function _getSlotMaterial (tex, blendMode) {
     // Add useModel flag due to if pre same db useModel but next db no useModel,
     // then next db will multiply model matrix more than once.
     let key = tex.url + src + dst + useModel;
-    let baseMaterial = _comp._material;
-    if (!baseMaterial) return null;
+    let baseMaterial = _comp.sharedMaterials[0];
+    if (!baseMaterial) {
+        return null;
+    }
     let materialCache = _comp._materialCache;
+
     let material = materialCache[key];
     if (!material) {
+        material = new Material();
+        material.copy(baseMaterial);
 
-        var baseKey = baseMaterial._hash;
-        if (!materialCache[baseKey]) {
-            material = baseMaterial;
-        } else {
-            material = baseMaterial.clone();
-        }
-
-        material.useModel = useModel;
-        // update texture
-        material.texture = tex;
-        material.useColor = false;
+        material.define('_USE_MODEL', useModel);
+        material.setProperty('texture', tex);
 
         // update blend function
-        let pass = material._mainTech.passes[0];
+        let pass = material.effect.getDefaultTechnique().passes[0];
         pass.setBlend(
+            true,
             gfx.BLEND_FUNC_ADD,
             src, dst,
             gfx.BLEND_FUNC_ADD,
@@ -103,7 +101,7 @@ function _getSlotMaterial (tex, blendMode) {
         material.updateHash(key);
     }
     else if (material.texture !== tex) {
-        material.texture = tex;
+        material.setProperty('texture', tex);
         material.updateHash(key);
     }
     return material;
@@ -119,6 +117,7 @@ function _handleColor (color, parentOpacity) {
 }
 
 let armatureAssembler = {
+
     updateRenderData (comp, batchData) {},
 
     realTimeTraverse (armature, parentMat, parentOpacity) {
@@ -140,7 +139,7 @@ let armatureAssembler = {
             if (parentMat) {
                 slot._mulMat(slot._worldMatrix, parentMat, slot._matrix);
             } else {
-                math.mat4.copy(slot._worldMatrix, slot._matrix);
+                mat4.copy(slot._worldMatrix, slot._matrix);
             }
 
             if (slot.childArmature) {

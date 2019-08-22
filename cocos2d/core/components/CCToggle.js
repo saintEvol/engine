@@ -24,6 +24,8 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+const GraySpriteState = require('../utils/gray-sprite-state');
+
 /**
  * !#en The toggle component is a CheckBox, when it used together with a ToggleGroup, it
  * could be treated as a RadioButton.
@@ -34,6 +36,7 @@
 let Toggle = cc.Class({
     name: 'cc.Toggle',
     extends: require('./CCButton'),
+    mixins: [GraySpriteState],
     editor: CC_EDITOR && {
         menu: 'i18n:MAIN_MENU.component.ui/Toggle',
         help: 'i18n:COMPONENT.help_url.toggle',
@@ -178,13 +181,9 @@ let Toggle = cc.Class({
     _updateDisabledState: function () {
         this._super();
 
-        if (this.checkMark) {
-            this.checkMark.setState(0);
-        }
-        if (this.enableAutoGrayEffect) {
-            if (this.checkMark && !this.interactable) {
-                this.checkMark.setState(1);
-            }
+        if (this.enableAutoGrayEffect && this.checkMark) {
+            let useGrayMaterial = !this.interactable;
+            this._switchGrayMaterial(useGrayMaterial, this.checkMark);
         }
     },
 

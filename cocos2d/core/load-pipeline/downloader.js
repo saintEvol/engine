@@ -148,6 +148,8 @@ var defaultMap = {
     'tiff' : downloadImage,
     'webp' : downloadWebp,
     'image' : downloadImage,
+    'pvr': downloadBinary,
+    'pkm': downloadBinary,
 
     // Audio
     'mp3' : downloadAudio,
@@ -184,7 +186,7 @@ var defaultMap = {
 
     // Binary
     'binary' : downloadBinary,
-    'bin': downloadBinary,
+    'bin' : downloadBinary,
     'dbbin' : downloadBinary,
 
     'default' : downloadText

@@ -39,8 +39,11 @@ if (!CC_EDITOR || !Editor.isMainProcess) {
     require('./collider/CCIntersection');
     require('./physics');
     require('./camera/CCCamera');
-
-    require('./utils/polyfill-3d');
+    require('./geom-utils');
 }
+
+require('./mesh');
+require('./3d');
+require('./3d/polyfill-3d');
 
 require('./base-ui/CCWidgetManager');

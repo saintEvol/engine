@@ -23,27 +23,29 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-const renderEngine = require('../render-engine');
-const defaultVertexFormat = require('./vertex-format').vfmtPosUvColor;
-const StencilManager = require('./stencil-manager');
+const vertexFormat = require('./vertex-format');
+const defaultVertexFormat = vertexFormat.vfmtPosUvColor;
+const vfmt3D = vertexFormat.vfmt3D;
 const QuadBuffer = require('./quad-buffer');
 const MeshBuffer = require('./mesh-buffer');
 const SpineBuffer = require('./spine-buffer');
+const Material = require('../../assets/material/CCMaterial');
 
 let idGenerater = new (require('../../platform/id-generater'))('VertextFormat');
 
-const RecyclePool = renderEngine.RecyclePool;
-const InputAssembler = renderEngine.InputAssembler;
+import InputAssembler from '../../../renderer/core/input-assembler';
+import RecyclePool from '../../../renderer/memop/recycle-pool';
+import Model from '../../../renderer/scene/model';
 
 let _buffers = {};
 
-const empty_material = new renderEngine.Material();
-empty_material.updateHash();
+const empty_material = new Material();
+const empty_ia = new InputAssembler();
+empty_ia._count = 0;
 
 var ModelBatcher = function (device, renderScene) {
     this._renderScene = renderScene;
     this._device = device;
-    this._stencilMgr = StencilManager.sharedManager;
 
     this.walking = false;
     this.material = empty_material;
@@ -54,12 +56,14 @@ var ModelBatcher = function (device, renderScene) {
     }, 16);
 
     this._modelPool = new RecyclePool(function () {
-        return new renderEngine.Model();
+        return new Model();
     }, 16);
 
     // buffers
     this._quadBuffer = this.getBuffer('quad', defaultVertexFormat);
     this._meshBuffer = this.getBuffer('mesh', defaultVertexFormat);
+    this._quadBuffer3D = this.getBuffer('quad', vfmt3D);
+    this._meshBuffer3D = this.getBuffer('mesh', vfmt3D);
     this._buffer = this._quadBuffer;
 
     this._batchedModels = [];
@@ -71,6 +75,8 @@ var ModelBatcher = function (device, renderScene) {
     this.parentOpacity = 1;
     this.parentOpacityDirty = 0;
     this.worldMatDirty = 0;
+
+    this.customProperties = null;
 };
 
 ModelBatcher.prototype = {
@@ -85,8 +91,8 @@ ModelBatcher.prototype = {
         let models = this._batchedModels;
         for (let i = 0; i < models.length; ++i) {
             // remove from scene
-            models[i].clearInputAssemblers();
-            models[i].clearEffects();
+            models[i].setInputAssembler(null);
+            models[i].setEffect(null);
             scene.removeModel(models[i]);
         }
         this._modelPool.reset();
@@ -107,8 +113,24 @@ ModelBatcher.prototype = {
         this.parentOpacityDirty = 0;
         this.worldMatDirty = 0;
 
-        // reset stencil manager's cache
-        this._stencilMgr.reset();
+        this.customProperties = null;
+    },
+
+    _flushMaterial (material) {
+        this.material = material;
+        let effect = material.effect;
+        if (!effect) return;
+        
+        // Generate model
+        let model = this._modelPool.add();
+        this._batchedModels.push(model);
+        model.sortKey = this._sortKey++;
+        model._cullingMask = this.cullingMask;
+        model.setNode(this.node);
+        model.setEffect(effect, null);
+        model.setInputAssembler(empty_ia);
+        
+        this._renderScene.addModel(model);
     },
 
     _flush () {
@@ -122,6 +144,7 @@ ModelBatcher.prototype = {
         }
 
         let effect = material.effect;
+        if (!effect) return;
 
         // Generate ia
         let ia = this._iaPool.add();
@@ -129,18 +152,15 @@ ModelBatcher.prototype = {
         ia._indexBuffer = buffer._ib;
         ia._start = indiceStart;
         ia._count = indiceCount;
-
-        // Check stencil state and modify pass
-        this._stencilMgr.handleEffect(effect);
         
         // Generate model
         let model = this._modelPool.add();
         this._batchedModels.push(model);
         model.sortKey = this._sortKey++;
-        model._cullingMask = CC_EDITOR ? 1 : this.cullingMask;
+        model._cullingMask = this.cullingMask;
         model.setNode(this.node);
-        model.addEffect(effect);
-        model.addInputAssembler(ia);
+        model.setEffect(effect, this.customProperties);
+        model.setInputAssembler(ia);
         
         this._renderScene.addModel(model);
            
@@ -157,29 +177,29 @@ ModelBatcher.prototype = {
         }
 
         this.material = material;
-
-        // Check stencil state and modify pass
-        let effect = this._stencilMgr.handleEffect(material.effect);
+        let effect = material.effect;
+        if (!effect) return;
         
         // Generate model
         let model = this._modelPool.add();
         this._batchedModels.push(model);
         model.sortKey = this._sortKey++;
-        model._cullingMask = CC_EDITOR ? 1 : this.cullingMask;
+        model._cullingMask = this.cullingMask;
         model.setNode(this.node);
-        model.addEffect(effect);
-        model.addInputAssembler(iaRenderData.ia);
+        model.setEffect(effect, this.customProperties);
+        model.setInputAssembler(iaRenderData.ia);
         
         this._renderScene.addModel(model);
     },
 
     _commitComp (comp, assembler, cullingMask) {
-        if (this.material._hash !== comp._material._hash || 
+        let material = comp.sharedMaterials[0];
+        if ((material && material.getHash() !== this.material.getHash()) || 
             this.cullingMask !== cullingMask) {
             this._flush();
     
-            this.node = assembler.useModel ? comp.node : this._dummyNode;
-            this.material = comp._material;
+            this.node = material.getDefine('_USE_MODEL') ? comp.node : this._dummyNode;
+            this.material = material;
             this.cullingMask = cullingMask;
         }
     
@@ -189,8 +209,8 @@ ModelBatcher.prototype = {
     _commitIA (comp, assembler, cullingMask) {
         this._flush();
         this.cullingMask = cullingMask;
-        this.material = comp._material;
-        this.node = assembler.useModel ? comp.node : this._dummyNode;
+        this.material = comp.sharedMaterials[0] || empty_material;
+        this.node = this.material.getDefine('_USE_MODEL') ? comp.node : this._dummyNode;
 
         assembler.renderIA(comp, this);
     },
@@ -206,8 +226,6 @@ ModelBatcher.prototype = {
         for (let key in _buffers) {
             _buffers[key].uploadData();
         }
-    
-        this.walking = false;
     },
 
     getBuffer (type, vertextFormat) {

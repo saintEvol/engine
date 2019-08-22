@@ -603,6 +603,18 @@ function initSys () {
      * @property {Boolean} isBrowser
      */
     sys.isBrowser = typeof window === 'object' && typeof document === 'object' && !CC_WECHATGAME && !CC_QQPLAY && !CC_JSB && !CC_RUNTIME && !isBaiduGame;
+
+    /**
+     * Is webgl extension support?
+     * @method glExtension
+     * @param name
+     */
+    sys.glExtension = function (name) {
+        if (CC_WECHATGAME && name === 'OES_texture_float') {
+            return false;
+        }
+        return !!cc.renderer.device.ext(name);
+    }
     
     if (_global.__platform && _global.__platform.getSystemInfo) {
         let env = _global.__platform.getSystemInfo();

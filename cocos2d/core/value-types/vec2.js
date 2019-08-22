@@ -24,10 +24,11 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+import { vec2 } from '../vmath';
+
 const ValueType = require('./value-type');
 const js = require('../platform/js');
 const CCClass = require('../platform/CCClass');
-const math = require('../renderer/render-engine').math;
 const misc = require('../utils/misc');
 
 /**
@@ -68,6 +69,8 @@ CCClass.fastDefine('cc.Vec2', Vec2, { x: 0, y: 0 });
 
 var proto = Vec2.prototype;
 
+// compatible with vec3
+js.value(proto, 'z', 0, true);
 
 /**
  * !#en clone a Vec2 object
@@ -589,7 +592,7 @@ proto.project = function (vector) {
  */
 proto.transformMat4 = function (m, out) {
     out = out || new Vec2();
-    math.vec2.transformMat4(out, this, m);
+    vec2.transformMat4(out, this, m);
 };
 
 //_serialize: function () {

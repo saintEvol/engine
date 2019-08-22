@@ -52,7 +52,7 @@ var jsbSkipModules = [
 ];
 var jsbAliasify = {
     replacements: {
-        '(.*)render-engine(.js)?': require.resolve('../../cocos2d/core/renderer/render-engine.jsb')
+        // '(.*)render-engine(.js)?': require.resolve('../../cocos2d/core/renderer/render-engine.jsb')
     },
     verbose: false
 };

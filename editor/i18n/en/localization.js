@@ -102,6 +102,15 @@ module.exports = {
             'actualFontSize': 'The actual rendering font size in shrink mode',
             'spacingX': 'The spacing of the x axis between characters',
         },
+        "outline": {
+            "color": "The outline color",
+            "width": "The outline width",
+        },
+        "shadow": {
+            "color": "The shadow color",
+            "offset": "Offset between font and shadow",
+            "blur": "A non-negative float specifying the level of shadow blur"
+        },
         "progress": {
             "bar_sprite": "A progress bar is displayed with the Sprite node that can dynamically change the size",
             "mode": "Horizontal or Vertical progress bar?",
@@ -213,19 +222,15 @@ module.exports = {
         },
         "editbox": {
             "string": "The initial input text of EditBox.",
-            "backgroundImage": "The background image of EditBox.",
+            "background": "The Sprite component attached to the node for EditBox's background.",
             "returnType": "The keyboard return type of EditBox. This is useful for keyboard of mobile device.",
             "input_flag": "Specify the input flag: password or capitalize word. ",
             "input_mode": "Specify the input mode: multiline or single line.",
-            "font_size": "The font size of input label.",
-            "line_height": "The line height of input label.",
-            "stay_on_top": "Set to true and the input is always visible and be on top of the game view, this property will be removed on v2.1",
             "tab_index": "Set the tabIndex of the DOM input element, only useful on Web.",
-            "font_color": "The font color of input label.",
             "placeholder": "The content string of placeholder.",
-            "placeholder_font_size": "The font size of placeholder label.",
-            "placeholder_font_color": "The font color of placeholder label.",
-            "max_length": "The maximize input characters."
+            "max_length": "The maximize input characters.",
+            "textLabel": "The Label component attached to the node for EditBox's input text label.",
+            "placeholderLabel": "The Label component attached to the node for EditBox's placeholder text label."
         },
         "videoplayer": {
             "resourceType": "The resource type of VideoPlayer, currently support remote URL and local videos.",
@@ -400,10 +405,13 @@ module.exports = {
             'layer': 'Specify which TiledLayer the TiledTile belong to.'
         },
         'wx_subcontext_view': {
-            'interval': 'The FPS of open data context, this property will overwrite the frame rate setting in open data context'
+            'interval': 'The FPS of open data context, this property will overwrite the frame rate setting in open data context',
         },
         'swan_subcontext_view': {
-            'interval': 'The FPS of open data context, this property will overwrite the frame rate setting in open data context'
-        }
+            'interval': 'The FPS of open data context, this property will overwrite the frame rate setting in open data context',
+        },
+        'skeleton_animation': {
+            'search_animation_clips': 'Search Animation Clips',
+        },
     }
 };

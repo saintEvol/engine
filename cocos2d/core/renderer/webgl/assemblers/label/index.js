@@ -24,9 +24,14 @@
  ****************************************************************************/
 
 const Label = require('../../../../components/CCLabel');
-const ttfAssembler = require('./ttf');
-const bmfontAssembler = require('./bmfont');
-const letterAssembler = require('./letter-font')
+
+const ttfAssembler = require('./2d/ttf');
+const bmfontAssembler = require('./2d/bmfont');
+const letterAssembler = require('./2d/letter');
+
+const ttfAssembler3D = require('./3d/ttf');
+const bmfontAssembler3D = require('./3d/bmfont');
+const letterAssembler3D = require('./3d/letter');
 
 let canvasPool = {
     pool: [],
@@ -54,15 +59,16 @@ let canvasPool = {
 
 var labelAssembler = {
     getAssembler (comp) {
-        let assembler = ttfAssembler;
+        let is3DNode = comp.node.is3DNode;
+        let assembler = is3DNode ? ttfAssembler3D : ttfAssembler;
         
         if (comp.font instanceof cc.BitmapFont) {
-            assembler = bmfontAssembler;
+            assembler = is3DNode ? bmfontAssembler3D : bmfontAssembler;
         } else if (comp.cacheMode === Label.CacheMode.CHAR) {
             if (cc.sys.browserType === cc.sys.BROWSER_TYPE_WECHAT_GAME_SUB) {
                 cc.warn('sorry, subdomain does not support CHAR mode currently!');
             } else {
-                assembler = letterAssembler;
+                assembler = is3DNode ? letterAssembler3D : letterAssembler;
             }  
         }
 

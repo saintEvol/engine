@@ -294,8 +294,6 @@ var game = {
         if (cc.audioEngine) {
             cc.audioEngine._break();
         }
-        // Pause animation
-        cc.director.stopAnimation();
         // Pause main loop
         if (this._intervalId)
             window.cancelAnimFrame(this._intervalId);
@@ -315,8 +313,7 @@ var game = {
         if (cc.audioEngine) {
             cc.audioEngine._restore();
         }
-        // Resume animation
-        cc.director.startAnimation();
+        cc.director._resetDeltaTime();
         // Resume main loop
         this._runMainLoop();
     },
@@ -626,6 +623,9 @@ var game = {
     },
     //Run game.
     _runMainLoop: function () {
+        if (CC_EDITOR) {
+            return;
+        }
         var self = this, callback, config = self.config,
             director = cc.director,
             skip = true, frameRate = config.frameRate;
@@ -878,7 +878,9 @@ var game = {
 
         if (CC_WECHATGAME && cc.sys.browserType !== cc.sys.BROWSER_TYPE_WECHAT_GAME_SUB) {
             wx.onShow && wx.onShow(onShown);
+            wx.onAudioInterruptionEnd && wx.onAudioInterruptionEnd(onShown);
             wx.onHide && wx.onHide(onHidden);
+            wx.onAudioInterruptionBegin && wx.onAudioInterruptionBegin(onHidden);
         }
 
         if ("onpageshow" in window && "onpagehide" in window) {

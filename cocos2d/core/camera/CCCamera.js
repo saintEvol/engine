@@ -130,7 +130,7 @@ let Camera = cc.Class({
         _targetTexture: null,
         _fov: 60,
         _orthoSize: 10,
-        _nearClip: 0.1,
+        _nearClip: 1,
         _farClip: 4096,
         _ortho: true,
         _rect: cc.rect(0, 0, 1, 1),
@@ -361,7 +361,7 @@ let Camera = cc.Class({
 
         _is3D: {
             get () {
-                return this.node._is3DNode;
+                return this.node && this.node._is3DNode;
             }
         }
     },

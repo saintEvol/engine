@@ -98,16 +98,23 @@ function _getSlotMaterial (tex, blendMode) {
             break;
     }
 
-    let key = tex.url + src + dst;
+    let useModel = !_comp.enableBatch;
+    let key = tex.url + src + dst + _useTint + useModel;
     let baseMaterial = _comp.sharedMaterials[0];
     if (!baseMaterial) return null;
 
     let materialCache = _comp._materialCache;
     let material = materialCache[key];
     if (!material) {
-        material = new cc.Material();
-        material.copy(baseMaterial);
-        material.define('_USE_MODEL', true);
+        let baseKey = baseMaterial._hash;
+        if (!materialCache[baseKey]) {
+            material = baseMaterial;
+        } else {
+            material = new cc.Material();
+            material.copy(baseMaterial);
+        }
+        
+        material.define('_USE_MODEL', useModel);
         material.define('USE_TINT', _useTint);
         // update texture
         material.setProperty('texture', tex);
@@ -307,7 +314,10 @@ var spineAssembler = {
             _indexCount = 0;
 
             attachment = slot.getAttachment();
-            if (!attachment) continue;
+            if (!attachment) {
+                clipper.clipEndWithSlot(slot);
+                continue;
+            }
 
             isRegion = attachment instanceof spine.RegionAttachment;
             isMesh = attachment instanceof spine.MeshAttachment;
@@ -318,10 +328,14 @@ var spineAssembler = {
                 continue;
             }
 
-            if (!isRegion && !isMesh) continue;
+            if (!isRegion && !isMesh) {
+                clipper.clipEndWithSlot(slot);
+                continue;
+            }
 
             material = _getSlotMaterial(attachment.region.texture._texture, slot.data.blendMode);
             if (!material) {
+                clipper.clipEndWithSlot(slot);
                 continue;
             }
 
@@ -380,6 +394,7 @@ var spineAssembler = {
             }
     
             if (_vertexFloatCount == 0 || _indexCount == 0) {
+                clipper.clipEndWithSlot(slot);
                 continue;
             }
     

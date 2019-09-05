@@ -441,7 +441,7 @@ sp.Skeleton = cc.Class({
         for (let mKey in cache) {
             let material = cache[mKey];
             if (material) {
-                material.useModel = !this.enableBatch;
+                material.define('_USE_MODEL', !this.enableBatch);
             }
         }
     },
@@ -669,8 +669,7 @@ sp.Skeleton = cc.Class({
         let material = this.sharedMaterials[0];
         if (!material) {
             material = Material.getInstantiatedBuiltinMaterial('2d-spine', this);
-        }
-        else {
+        } else {
             material = Material.getInstantiatedMaterial(material, this);
         }
 

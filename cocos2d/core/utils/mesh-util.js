@@ -1,5 +1,5 @@
 /****************************************************************************
- Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+ Copyright (c) 2019 Xiamen Yaji Software Co., Ltd.
 
  https://www.cocos.com/
 
@@ -23,23 +23,16 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-const js = require('../../../../../platform/js');
-const bmfontAssembler = require('./bmfont');
-const fontUtils = require('../../../../utils/label/letter-font');
-const fillMeshVertices = require('../../utils').fillMeshVertices;
-const WHITE = cc.color(255, 255, 255, 255);
-
-module.exports = js.addon({
-    createData (comp) {
-        return comp.requestRenderData();
-    },
-
-    fillBuffers (comp, renderer) {
-        let node = comp.node;
-        WHITE._fastSetA(node.color.a);
-        fillMeshVertices(node, renderer._meshBuffer, comp._renderData, WHITE._val);
-    },
-
-    appendQuad: bmfontAssembler.appendQuad
-
-}, fontUtils);
+export function postLoadMesh (mesh, callback) {
+    if (mesh.loaded || !mesh.nativeUrl) {
+        callback && callback();
+        return;
+    }
+    // load image
+    cc.loader.load(mesh.nativeUrl, function (err, buffer) {
+        if (buffer) {
+            mesh._nativeAsset = buffer;
+        }
+        callback && callback(err);
+    });
+}

@@ -128,6 +128,11 @@ const Overflow = cc.Enum({
  * @property {Number} SystemFont
  */
 
+/**
+ * !#en Enum for cache mode.
+ * !#zh CacheMode 类型
+ * @enum Label.CacheMode
+ */
  /**
  * !#en Do not do any caching.
  * !#zh 不做任何缓存。
@@ -367,8 +372,6 @@ let Label = cc.Class({
                 if (CC_EDITOR && value) {
                     this._userDefinedFont = value;
                 }
-                // release reference
-                cc.Label.FontAtlasManager.releaseFontAtlas(this.font, this.node._id);
                 this._N$file = value;
                 if (value && this._isSystemFontUsed)
                     this._isSystemFontUsed = false;
@@ -537,8 +540,8 @@ let Label = cc.Class({
         this.node.on(cc.Node.EventType.ANCHOR_CHANGED, this._updateRenderData, this);
         this.node.on(cc.Node.EventType.COLOR_CHANGED, this._updateColor, this);
 
-        this._checkStringEmpty();
         this._updateRenderData(true);
+        this._checkStringEmpty();
     },
 
     onDisable () {
@@ -556,8 +559,6 @@ let Label = cc.Class({
             this._ttfTexture.destroy();
             this._ttfTexture = null;
         }
-        // release reference
-        cc.Label.FontAtlasManager.releaseFontAtlas(this.font, this.node._id);
         this._super();
     },
 

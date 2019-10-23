@@ -70,7 +70,7 @@ class Vec4 extends ValueType {
          */
         this.z = z || 0;
         /**
-         * @property {Number} z
+         * @property {Number} w
          */
         this.w = w || 0;
     }
@@ -320,7 +320,7 @@ class Vec4 extends ValueType {
      * !#en Divides by a number. If you want to save result to another vector, use div() instead.
      * !#zh 向量除法。如果你想结果保存到另一个向量，可使用 div() 代替。
      * @method divSelf
-     * @param {Vec4} vector
+     * @param {number} num
      * @return {Vec4} returns this
      * @chainable
      */
@@ -336,7 +336,7 @@ class Vec4 extends ValueType {
      * !#en Divides by a number, and returns the new result.
      * !#zh 向量除法，并返回新的结果。
      * @method div
-     * @param {Vec4} vector
+     * @param {number} num
      * @param {Vec4} [out] - optional, the receiving vector, you can pass the same vec4 to save result to itself, if not provided, a new vec4 will be created
      * @return {Vec4} the result
      */
@@ -470,9 +470,9 @@ class Vec4 extends ValueType {
     /**
      * Transforms the vec4 with a mat4. 4th vector component is implicitly '1'
      * @method transformMat4
-     * @param {mat4} m matrix to transform with
-     * @param {vec4} [out] the receiving vector, you can pass the same vec4 to save result to itself, if not provided, a new vec4 will be created
-     * @returns {vec4} out
+     * @param {Mat4} m matrix to transform with
+     * @param {Vec4} [out] the receiving vector, you can pass the same vec4 to save result to itself, if not provided, a new vec4 will be created
+     * @returns {Vec4} out
      */
     transformMat4 (m, out) {
         out = out || new Vec4();
@@ -482,6 +482,10 @@ class Vec4 extends ValueType {
 }
 
 CCClass.fastDefine('cc.Vec4', Vec4, { x: 0, y: 0, z: 0, w: 0 });
+
+/**
+ * @module cc
+ */
 
 /**
  * !#en The convenience method to create a new {{#crossLink "Vec4"}}cc.Vec4{{/crossLink}}.

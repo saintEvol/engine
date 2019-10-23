@@ -69,7 +69,8 @@ let RenderComponent = cc.Class({
                 this._activateMaterial(true);
             },
             type: [Material],
-            displayName: 'Materials'
+            displayName: 'Materials',
+            animatable: false
         }
     },
     
@@ -166,6 +167,7 @@ let RenderComponent = cc.Class({
      * !#zh 根据指定索引获取材质
      * @method getMaterial
      * @param {Number} index 
+     * @return {Material}
      */
     getMaterial (index) {
         if (index < 0 || index >= this._materials.length) {

@@ -569,8 +569,12 @@ var Texture2D = cc.Class({
 
     /**
      * !#en
-     * HTMLElement Object getter, available only on web.
-     * !#zh 获取当前贴图对应的 HTML Image 或 Canvas 对象，只在 Web 平台下有效。
+     * HTMLElement Object getter, available only on web.<br/>
+     * Note: texture is packed into texture atlas by default<br/>
+     * you should set texture.packable as false before getting Html element object.
+     * !#zh 获取当前贴图对应的 HTML Image 或 Canvas 对象，只在 Web 平台下有效。<br/>
+     * 注意：<br/>
+     * texture 默认参与动态合图，如果需要获取到正确的 Html 元素对象，需要先设置 texture.packable 为 false
      * @method getHtmlElementObj
      * @return {HTMLImageElement|HTMLCanvasElement}
      */
@@ -629,7 +633,7 @@ var Texture2D = cc.Class({
      * @param {Boolean} [premultiplied]
      */
     handleLoadedTexture () {
-        if (!this._image || this._image.width == null || this._image.height == null)
+        if (!this._image || !this._image.width || !this._image.height)
             return;
         
         this.width = this._image.width;
@@ -774,6 +778,10 @@ var Texture2D = cc.Class({
             this._packable = false;
             return;
         }
+
+        if (this._image && this._image instanceof HTMLCanvasElement) {
+            this._packable = true;
+        }
     },
 
     _getOpts() {
@@ -868,6 +876,9 @@ var Texture2D = cc.Class({
                         continue;
                     }
                     else if ((tmpFormat === PixelFormat.RGB_ETC2 || tmpFormat === PixelFormat.RGBA_ETC2) && !device.ext('WEBGL_compressed_texture_etc')) {
+                        continue;
+                    }
+                    else if (tmpExt === '.webp' && !cc.sys.capabilities.webp) {
                         continue;
                     }
 
